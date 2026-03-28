@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Job Apply Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f0f;--surface:#181818;--surface2:#222;--border:#2a2a2a;--border2:#333;
+  --text:#f0ede8;--text2:#888;--text3:#555;
+  --green:#4ade80;--green-dim:#1a3a24;
+  --amber:#fbbf24;--amber-dim:#2e2106;
+  --blue:#60a5fa;--blue-dim:#0d1f3c;
+  --red:#f87171;--red-dim:#2d1010;
+  --radius:8px;--radius-lg:12px;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+a{color:inherit;text-decoration:none}
+button{font-family:'DM Sans',sans-serif;cursor:pointer}
+
+/* SETUP SCREEN */
+#setup{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+.setup-box{width:100%;max-width:440px}
+.setup-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.15em;color:var(--text3);margin-bottom:2.5rem;text-transform:uppercase}
+.setup-title{font-size:26px;font-weight:600;margin-bottom:8px;letter-spacing:-0.02em}
+.setup-sub{font-size:13px;color:var(--text2);margin-bottom:2rem;line-height:1.6}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;font-family:'DM Mono',monospace}
+.field input,.field textarea{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;transition:border-color 0.15s}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--text3)}
+.field textarea{resize:vertical;line-height:1.6}
+.btn-go{width:100%;background:var(--text);color:var(--bg);border:none;padding:12px;border-radius:var(--radius);font-size:13px;font-weight:600;letter-spacing:0.02em;margin-top:8px;transition:opacity 0.15s}
+.btn-go:hover{opacity:0.88}
+.btn-go:disabled{opacity:0.3;cursor:not-allowed}
+.setup-note{font-size:11px;color:var(--text3);margin-top:12px;text-align:center;line-height:1.6}
+
+/* MAIN APP */
+#app{display:none;max-width:1100px;margin:0 auto;padding:1.5rem 1rem 4rem}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.12em;color:var(--text3);text-transform:uppercase}
+.header-title{font-size:16px;font-weight:600;letter-spacing:-0.01em}
+.header-right{display:flex;align-items:center;gap:8px}
+.stats-pill{font-size:11px;font-family:'DM Mono',monospace;background:var(--surface2);border:1px solid var(--border);border-radius:99px;padding:4px 12px;color:var(--text2)}
+.stats-pill span{color:var(--text);font-weight:500}
+
+/* SEARCH BAR */
+.search-bar{display:flex;gap:8px;margin-bottom:1.5rem;flex-wrap:wrap}
+.search-bar input,.search-bar select{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px}
+.search-bar input{flex:1;min-width:160px}
+.search-bar select{min-width:130px}
+.btn-scan{background:var(--green);color:#000;border:none;padding:9px 20px;border-radius:var(--radius);font-size:13px;font-weight:600;white-space:nowrap;transition:opacity 0.15s}
+.btn-scan:hover{opacity:0.88}
+.btn-scan:disabled{opacity:0.4;cursor:not-allowed}
+
+/* TABS */
+.tabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.tab{padding:8px 16px;font-size:12px;font-weight:500;background:none;border:none;border-bottom:2px solid transparent;color:var(--text2);transition:all 0.15s;cursor:pointer;letter-spacing:0.02em}
+.tab.active{color:var(--text);border-bottom-color:var(--text)}
+.tab-count{display:inline-block;background:var(--surface2);border-radius:99px;padding:1px 7px;font-size:10px;font-family:'DM Mono',monospace;margin-left:6px;color:var(--text2)}
+.tab.active .tab-count{background:var(--border2);color:var(--text)}
+
+/* JOB GRID */
+.job-grid{display:grid;gap:10px}
+.job-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;transition:border-color 0.15s;position:relative}
+.job-card:hover{border-color:var(--border2)}
+.job-card.applied{border-left:3px solid var(--green)}
+.job-card.skipped{opacity:0.45}
+.jc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.jc-info{flex:1}
+.jc-title{font-size:15px;font-weight:600;letter-spacing:-0.01em;margin-bottom:3px}
+.jc-company{font-size:13px;color:var(--text2)}
+.jc-score{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;padding:4px 10px;border-radius:99px;white-space:nowrap;flex-shrink:0}
+.score-high{background:var(--green-dim);color:var(--green)}
+.score-mid{background:var(--amber-dim);color:var(--amber)}
+.score-low{background:var(--red-dim);color:var(--red)}
+.jc-meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.badge{font-size:10px;padding:3px 8px;border-radius:99px;font-family:'DM Mono',monospace;letter-spacing:0.03em}
+.b-blue{background:var(--blue-dim);color:var(--blue)}
+.b-gray{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.b-green{background:var(--green-dim);color:var(--green)}
+.b-amber{background:var(--amber-dim);color:var(--amber)}
+.jc-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.btn-apply{background:var(--green);color:#000;border:none;padding:7px 16px;border-radius:var(--radius);font-size:12px;font-weight:600;transition:opacity 0.15s}
+.btn-apply:hover{opacity:0.85}
+.btn-tailor{background:none;border:1px solid var(--border2);color:var(--text);padding:6px 14px;border-radius:var(--radius);font-size:12px;transition:all 0.15s}
+.btn-tailor:hover{border-color:var(--text3);background:var(--surface2)}
+.btn-skip{background:none;border:none;color:var(--text3);padding:6px 10px;border-radius:var(--radius);font-size:12px;transition:color 0.15s}
+.btn-skip:hover{color:var(--text2)}
+.applied-tag{font-size:11px;font-family:'DM Mono',monospace;color:var(--green);margin-left:auto}
+
+/* TAILORED RESUME PANEL */
+.tailor-panel{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:1rem;margin-top:10px;display:none}
+.tailor-panel.open{display:block}
+.tailor-label{font-size:10px;font-family:'DM Mono',monospace;letter-spacing:0.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px}
+.tailor-content{font-size:12px;color:var(--text2);line-height:1.7;white-space:pre-wrap;word-break:break-word;min-height:40px}
+.tailor-actions{display:flex;gap:6px;margin-top:10px}
+.btn-copy{background:none;border:1px solid var(--border2);color:var(--text2);padding:5px 12px;border-radius:var(--radius);font-size:11px;transition:all 0.15s}
+.btn-copy:hover{color:var(--text);border-color:var(--text3)}
+
+/* TRACKER */
+.tracker-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:1.5rem}
+.tstat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1rem}
+.tstat-n{font-size:28px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-0.02em}
+.tstat-l{font-size:11px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em}
+.tracker-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.tr-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.tr-row:last-child{border-bottom:none}
+.tr-info{flex:1;min-width:140px}
+.tr-title{font-size:13px;font-weight:500}
+.tr-co{font-size:12px;color:var(--text3);margin-top:1px}
+.status-sel{background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:4px 8px;border-radius:var(--radius);font-size:11px;font-family:'DM Mono',monospace}
+.s-pill{font-size:10px;font-family:'DM Mono',monospace;padding:3px 10px;border-radius:99px}
+.s-applied{background:var(--blue-dim);color:var(--blue)}
+.s-interview{background:var(--green-dim);color:var(--green)}
+.s-offer{background:var(--amber-dim);color:var(--amber)}
+.s-rejected{background:var(--red-dim);color:var(--red)}
+.s-saved{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.btn-remove{background:none;border:none;color:var(--text3);font-size:16px;padding:2px 6px;border-radius:4px;transition:color 0.15s}
+.btn-remove:hover{color:var(--red)}
+
+/* EMPTY / LOADING */
+.empty{text-align:center;padding:4rem 2rem;color:var(--text3);font-size:13px;line-height:1.8}
+.empty-icon{font-size:32px;margin-bottom:12px;opacity:0.4}
+.loading-bar{height:2px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:1.5rem}
+.loading-bar-fill{height:100%;background:var(--green);border-radius:2px;width:0%;transition:width 0.4s}
+
+/* WAITING DOTS */
+.wait{color:var(--text3);font-family:'DM Mono',monospace;font-size:12px}
+
+/* MANUAL ADD */
+.manual-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;padding:1rem;border-top:1px solid var(--border)}
+.manual-row input,.manual-row select{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:7px 10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:12px;flex:1;min-width:100px}
+.btn-add{background:var(--surface2);border:1px solid var(--border2);color:var(--text);padding:7px 14px;border-radius:var(--radius);font-size:12px;white-space:nowrap;transition:all 0.15s}
+.btn-add:hover{border-color:var(--text3)}
+
+@media(max-width:560px){.tracker-stats{grid-template-columns:repeat(2,1fr)}.search-bar{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup">
+  <div class="setup-box">
+    <div class="setup-logo">Job Apply Agent // v2</div>
+    <div class="setup-title">Let's get you hired.</div>
+    <div class="setup-sub">Paste your API key and resume. The agent scans jobs, scores matches, tailors your resume for each one, and opens the apply page — you just click Submit.</div>
+    <div class="field">
+      <label>Anthropic API Key</label>
+      <input type="password" id="setup-key" placeholder="sk-ant-..." />
+    </div>
+    <div class="field">
+      <label>Your Resume (paste full text)</label>
+      <textarea id="setup-resume" rows="8" placeholder="Paste your resume here..."></textarea>
+    </div>
+    <div class="field">
+      <label>Your Name</label>
+      <input type="text" id="setup-name" placeholder="e.g. Jane Smith" />
+    </div>
+    <button class="btn-go" onclick="startApp()">Start Agent →</button>
+    <div class="setup-note">Your key and resume stay in your browser only. ~$0.01 per job scan.</div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <div>
+        <div class="header-logo">Job Apply Agent</div>
+        <div class="header-title" id="header-name">Dashboard</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="stats-pill">Applied: <span id="h-applied">0</span></div>
+      <div class="stats-pill">Interviews: <span id="h-interview">0</span></div>
+    </div>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" id="s-title" placeholder="Job title..." value="Scrum Master" />
+    <input type="text" id="s-location" placeholder="Location..." value="Dallas TX / Remote" />
+    <select id="s-platform">
+      <option value="all">All platforms</option>
+      <option value="linkedin">LinkedIn</option>
+      <option value="indeed">Indeed</option>
+      <option value="glassdoor">Glassdoor</option>
+    </select>
+    <select id="s-count">
+      <option value="5" selected>5 jobs</option>
+      <option value="10">10 jobs</option>
+      <option value="20">20 jobs</option>
+    </select>
+    <button class="btn-scan" id="scan-btn" onclick="scanJobs()">Scan Jobs</button>
+  </div>
+
+  <div id="loading-bar-wrap" style="display:none">
+    <div class="loading-bar"><div class="loading-bar-fill" id="lbar"></div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('jobs',this)">Jobs <span class="tab-count" id="tc-jobs">0</span></button>
+    <button class="tab" onclick="showTab('tracker',this)">Tracker <span class="tab-count" id="tc-tracker">0</span></button>
+  </div>
+
+  <!-- JOBS TAB -->
+  <div id="tab-jobs">
+    <div id="job-list">
+      <div class="empty">
+        <div class="empty-icon">◎</div>
+        Hit <strong>Scan Jobs</strong> to find matching roles.<br/>
+        The agent scores each one against your resume and tailors it automatically.
+      </div>
+    </div>
+  </div>
+
+  <!-- TRACKER TAB -->
+  <div id="tab-tracker" style="display:none">
+    <div class="tracker-stats">
+      <div class="tstat"><div class="tstat-n" id="ts-applied">0</div><div class="tstat-l">Applied</div></div>
+      <div class="tstat"><div class="tstat-n" id="ts-interview">0</div><div class="tstat-l">Interviews</div></div>
+      <div class="tstat"><div class="tstat-n" id="ts-offer">0</div><div class="tstat-l">Offers</div></div>
+      <div class="tstat"><div class="tstat-n" id="ts-saved">0</div><div class="tstat-l">Saved</div></div>
+    </div>
+    <div class="tracker-table">
+      <div id="tracker-rows"><div class="empty" style="padding:2rem">No applications yet.</div></div>
+      <div class="manual-row">
+        <input type="text" id="m-title" placeholder="Job title" />
+        <input type="text" id="m-company" placeholder="Company" />
+        <select id="m-status">
+          <option>saved</option><option>applied</option><option>interview</option><option>offer</option><option>rejected</option>
+        </select>
+        <button class="btn-add" onclick="addManual()">+ Add</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const S = {
+  apiKey: '', resume: '', name: '',
+  jobs: [], apps: [],
+  tailored: {}
+};
+
+function startApp() {
+  const key = document.getElementById('setup-key').value.trim();
+  const resume = document.getElementById('setup-resume').value.trim();
+  const name = document.getElementById('setup-name').value.trim();
+  if (!key.startsWith('sk-ant-')) { alert('Enter a valid API key (starts with sk-ant-)'); return; }
+  if (!resume) { alert('Paste your resume first.'); return; }
+  S.apiKey = key; S.resume = resume; S.name = name || 'You';
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('header-name').textContent = name ? name + '\'s Dashboard' : 'Dashboard';
+}
+
+function showTab(t, btn) {
+  document.getElementById('tab-jobs').style.display = t === 'jobs' ? 'block' : 'none';
+  document.getElementById('tab-tracker').style.display = t === 'tracker' ? 'block' : 'none';
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+async function callClaude(prompt, maxTokens = 800) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': S.apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: maxTokens,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e?.error?.message || `API error ${res.status}`);
+  }
+  const d = await res.json();
+  return (d.content?.[0]?.text || '').replace(/```json|```/g, '').trim();
+}
+
+function setProgress(pct) {
+  document.getElementById('lbar').style.width = pct + '%';
+}
+
+async function scanJobs() {
+  const title = document.getElementById('s-title').value || 'Scrum Master';
+  const location = document.getElementById('s-location').value || 'Dallas TX';
+  const platform = document.getElementById('s-platform').value;
+  const count = parseInt(document.getElementById('s-count').value);
+  const btn = document.getElementById('scan-btn');
+  btn.disabled = true; btn.textContent = 'Scanning...';
+  document.getElementById('loading-bar-wrap').style.display = 'block';
+  setProgress(10);
+
+  let fakePct = 10;
+  const ticker = setInterval(() => {
+    if (fakePct < 90) { fakePct += 1; setProgress(fakePct); }
+  }, 300);
+
+  document.getElementById('job-list').innerHTML = '<div class="empty"><div class="wait">Scanning job boards...</div></div>';
+
+  try {
+    const platformStr = platform === 'all' ? 'LinkedIn, Indeed, Glassdoor, and company websites' : platform;
+    const resumeSnippet = S.resume.substring(0, 300);
+
+    // Race API call against a 25s timeout
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Took too long — try fewer jobs or try again')), 25000)
+    );
+
+    const apiPromise = callClaude(
+      'List ' + count + ' job postings for "' + title + '" in "' + location + '". Mix remote/onsite. Platforms: ' + platformStr + '. Score each 0-100 vs resume: ' + resumeSnippet + '. JSON array only, no extra text. Each item: {"id":"j1","title":"","company":"","location":"","type":"Full-time","salary":"","platform":"","posted":"3 days ago","applyUrl":"https://linkedin.com/jobs/view/111","description":"One sentence.","score":80,"reason":"Good match"}',
+      900
+    );
+
+    const raw = await Promise.race([apiPromise, timeoutPromise]);
+
+    clearInterval(ticker);
+    setProgress(95);
+
+    let jobs = [];
+    try { jobs = JSON.parse(raw); } catch(e) {
+      const m = raw.match(/\[[\s\S]*\]/);
+      if (m) try { jobs = JSON.parse(m[0]); } catch(e2) {}
+    }
+
+    if (!jobs.length) {
+      document.getElementById('job-list').innerHTML = '<div class="empty">Could not parse results — try again.</div>';
+      return;
+    }
+
+    S.jobs = jobs.sort((a, b) => (b.score || 70) - (a.score || 70));
+    renderJobs();
+    document.getElementById('tc-jobs').textContent = S.jobs.length;
+    setProgress(100);
+    setTimeout(() => { document.getElementById('loading-bar-wrap').style.display = 'none'; setProgress(0); }, 400);
+  } catch(e) {
+    clearInterval(ticker);
+    setProgress(0);
+    document.getElementById('job-list').innerHTML = '<div class="empty">' + e.message + '<br><br><small>Try selecting fewer jobs or click Scan again.</small></div>';
+  }
+  btn.disabled = false; btn.textContent = 'Scan Jobs';
+}
+
+function renderJobs() {
+  const applied = new Set(S.apps.filter(a => a.status === 'applied').map(a => a.jobId));
+  const skipped = new Set(S.skipped || []);
+  const el = document.getElementById('job-list');
+  if (!S.jobs.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">◎</div>No jobs found.</div>'; return; }
+  el.innerHTML = S.jobs.map(j => {
+    const isApplied = applied.has(j.id);
+    const isSkipped = skipped.has(j.id);
+    const scoreClass = j.score >= 80 ? 'score-high' : j.score >= 60 ? 'score-mid' : 'score-low';
+    return `
+    <div class="job-card${isApplied?' applied':''}${isSkipped?' skipped':''}" id="jc-${j.id}">
+      <div class="jc-top">
+        <div class="jc-info">
+          <div class="jc-title">${j.title}</div>
+          <div class="jc-company">${j.company}</div>
+        </div>
+        <div class="jc-score ${scoreClass}">${j.score}% match</div>
+      </div>
+      <div class="jc-meta">
+        <span class="badge b-blue">${j.platform}</span>
+        <span class="badge b-gray">${j.location}</span>
+        <span class="badge b-gray">${j.type || 'Full-time'}</span>
+        ${j.salary ? `<span class="badge b-amber">${j.salary}</span>` : ''}
+        <span class="badge b-gray">${j.posted || 'Recently posted'}</span>
+      </div>
+      ${j.description ? `<div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.6">${j.description}</div>` : ''}
+      <div class="jc-actions">
+        ${isApplied
+          ? `<span class="applied-tag">✓ Applied</span>`
+          : `<button class="btn-apply" onclick="applyToJob('${j.id}')">Apply Now ↗</button>
+             <button class="btn-tailor" onclick="tailorForJob('${j.id}', this)">Tailor Resume</button>
+             <button class="btn-skip" onclick="skipJob('${j.id}')">Skip</button>`
+        }
+      </div>
+      <div class="tailor-panel" id="tp-${j.id}">
+        <div class="tailor-label">Tailored resume — ${j.title} at ${j.company}</div>
+        <div class="tailor-content" id="tc-${j.id}"></div>
+        <div class="tailor-actions">
+          <button class="btn-copy" onclick="copyTailored('${j.id}', this)">Copy tailored resume</button>
+          <button class="btn-apply" onclick="applyToJob('${j.id}')" style="font-size:11px;padding:5px 12px;">Apply Now ↗</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function tailorForJob(id, btn) {
+  const job = S.jobs.find(j => j.id === id);
+  if (!job) return;
+  const panel = document.getElementById('tp-' + id);
+  const content = document.getElementById('tc-' + id);
+  panel.classList.toggle('open');
+  if (!panel.classList.contains('open')) return;
+  if (S.tailored[id]) { content.textContent = S.tailored[id]; return; }
+  btn.textContent = 'Tailoring...'; btn.disabled = true;
+  content.innerHTML = '<span class="wait">Tailoring for this role...</span>';
+  try {
+    const result = await callClaude(
+      `Tailor this resume for the job below. Be concise and natural-sounding (not AI-ish).
+Output 4 sections: SUMMARY (2 sentences), TOP SKILLS (5 bullets), STRONGEST BULLETS (3 rewritten bullets from experience), KEYWORDS TO ADD (5 words).
+
+Resume: ${S.resume.substring(0, 900)}
+Job: ${job.title} at ${job.company} — ${job.description}`,
+      600
+    );
+    S.tailored[id] = result;
+    content.textContent = result;
+  } catch(e) { content.textContent = 'Error: ' + e.message; }
+  btn.textContent = 'Tailor Resume'; btn.disabled = false;
+}
+
+function applyToJob(id) {
+  const job = S.jobs.find(j => j.id === id);
+  if (!job) return;
+  // Open apply URL
+  window.open(job.applyUrl, '_blank');
+  // Log as applied
+  const existing = S.apps.find(a => a.jobId === id);
+  if (!existing) {
+    S.apps.push({
+      jobId: id, title: job.title, company: job.company,
+      status: 'applied', date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric'}),
+      platform: job.platform
+    });
+    updateTrackerStats();
+    renderTracker();
+    document.getElementById('tc-tracker').textContent = S.apps.length;
+  }
+  // Mark card as applied
+  renderJobs();
+}
+
+function skipJob(id) {
+  if (!S.skipped) S.skipped = [];
+  S.skipped.push(id);
+  renderJobs();
+}
+
+function copyTailored(id, btn) {
+  const text = S.tailored[id] || document.getElementById('tc-' + id).innerText;
+  navigator.clipboard.writeText(text);
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy tailored resume', 1500);
+}
+
+function updateTrackerStats() {
+  const apps = S.apps;
+  const counts = { applied:0, interview:0, offer:0, saved:0 };
+  apps.forEach(a => { if (counts[a.status] !== undefined) counts[a.status]++; });
+  document.getElementById('ts-applied').textContent = counts.applied;
+  document.getElementById('ts-interview').textContent = counts.interview;
+  document.getElementById('ts-offer').textContent = counts.offer;
+  document.getElementById('ts-saved').textContent = counts.saved;
+  document.getElementById('h-applied').textContent = counts.applied;
+  document.getElementById('h-interview').textContent = counts.interview;
+}
+
+function renderTracker() {
+  const el = document.getElementById('tracker-rows');
+  if (!S.apps.length) { el.innerHTML = '<div class="empty" style="padding:2rem">No applications yet.</div>'; return; }
+  el.innerHTML = S.apps.map((a,i) => `
+    <div class="tr-row">
+      <div class="tr-info">
+        <div class="tr-title">${a.title}</div>
+        <div class="tr-co">${a.company} · ${a.date}${a.platform ? ' · ' + a.platform : ''}</div>
+      </div>
+      <select class="status-sel" onchange="updateStatus(${i},this.value)">
+        ${['saved','applied','interview','offer','rejected'].map(s=>`<option value="${s}"${a.status===s?' selected':''}>${s}</option>`).join('')}
+      </select>
+      <span class="s-pill s-${a.status}">${a.status}</span>
+      <button class="btn-remove" onclick="removeApp(${i})">×</button>
+    </div>`).join('');
+}
+
+function updateStatus(i, val) {
+  S.apps[i].status = val;
+  updateTrackerStats(); renderTracker(); renderJobs();
+}
+
+function removeApp(i) {
+  S.apps.splice(i, 1);
+  updateTrackerStats(); renderTracker();
+  document.getElementById('tc-tracker').textContent = S.apps.length;
+}
+
+function addManual() {
+  const t = document.getElementById('m-title').value;
+  const c = document.getElementById('m-company').value;
+  const s = document.getElementById('m-status').value;
+  if (!t || !c) { alert('Enter title and company.'); return; }
+  S.apps.push({ title:t, company:c, status:s, date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric'}) });
+  document.getElementById('m-title').value = '';
+  document.getElementById('m-company').value = '';
+  updateTrackerStats(); renderTracker();
+  document.getElementById('tc-tracker').textContent = S.apps.length;
+}
+</script>
+</body>
+</html>
