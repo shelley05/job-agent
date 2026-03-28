@@ -320,7 +320,7 @@ async function scanJobs() {
     );
 
     const apiPromise = callClaude(
-      'List ' + count + ' job postings for "' + title + '" in "' + location + '". Mix remote/onsite. Platforms: ' + platformStr + '. Score each 0-100 vs resume: ' + resumeSnippet + '. JSON array only, no extra text. Each item: {"id":"j1","title":"","company":"","location":"","type":"Full-time","salary":"","platform":"","posted":"3 days ago","applyUrl":"https://linkedin.com/jobs/view/111","description":"One sentence.","score":80,"reason":"Good match"}',
+      'Return ONLY a JSON array (no markdown) of ' + count + ' job listings for "' + title + '" in "' + location + '". Score each vs resume: ' + resumeSnippet + '. Each object: {"id":"j1","title":"Sr Scrum Master","company":"Tech Corp","location":"Dallas TX","type":"Full-time","salary":"$120k-140k","platform":"LinkedIn","posted":"2 days ago","applyUrl":"","description":"Lead agile teams.","score":85,"reason":"Strong match"}',
       900
     );
 
@@ -330,13 +330,24 @@ async function scanJobs() {
     setProgress(95);
 
     let jobs = [];
-    try { jobs = JSON.parse(raw); } catch(e) {
-      const m = raw.match(/\[[\s\S]*\]/);
-      if (m) try { jobs = JSON.parse(m[0]); } catch(e2) {}
+    try {
+      // Try direct parse first
+      jobs = JSON.parse(raw);
+    } catch(e) {
+      // Try extracting JSON array from response
+      const m = raw.match(/\[\s*\{[\s\S]*\}\s*\]/);
+      if (m) {
+        try { jobs = JSON.parse(m[0]); } catch(e2) {}
+      }
     }
 
+    // Filter out any invalid entries
+    jobs = jobs.filter(j => j && j.title && j.company);
+
     if (!jobs.length) {
-      document.getElementById('job-list').innerHTML = '<div class="empty">Could not parse results — try again.</div>';
+      // Show raw response in console for debugging
+      console.log('Raw API response:', raw);
+      document.getElementById('job-list').innerHTML = '<div class="empty">Could not parse results — try clicking Scan Jobs again.</div>';
       return;
     }
 
