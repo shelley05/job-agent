@@ -382,7 +382,7 @@ function renderJobs() {
       <div class="jc-actions">
         ${isApplied
           ? `<span class="applied-tag">✓ Applied</span>`
-          : `<button class="btn-apply" onclick="applyToJob('${j.id}')">Apply Now ↗</button>
+          : `<button class="btn-apply" onclick="applyToJob('${j.id}')">Find & Apply ↗</button>
              <button class="btn-tailor" onclick="tailorForJob('${j.id}', this)">Tailor Resume</button>
              <button class="btn-skip" onclick="skipJob('${j.id}')">Skip</button>`
         }
@@ -392,7 +392,7 @@ function renderJobs() {
         <div class="tailor-content" id="tc-${j.id}"></div>
         <div class="tailor-actions">
           <button class="btn-copy" onclick="copyTailored('${j.id}', this)">Copy tailored resume</button>
-          <button class="btn-apply" onclick="applyToJob('${j.id}')" style="font-size:11px;padding:5px 12px;">Apply Now ↗</button>
+          <button class="btn-apply" onclick="applyToJob('${j.id}')" style="font-size:11px;padding:5px 12px;">Find & Apply ↗</button>
         </div>
       </div>
     </div>`;
@@ -424,11 +424,25 @@ Job: ${job.title} at ${job.company} — ${job.description}`,
   btn.textContent = 'Tailor Resume'; btn.disabled = false;
 }
 
+function realSearchUrl(job) {
+  const q = encodeURIComponent(job.title + ' ' + job.company);
+  const loc = encodeURIComponent(job.location || 'Dallas TX');
+  const platform = (job.platform || '').toLowerCase();
+  if (platform.includes('indeed')) {
+    return 'https://www.indeed.com/jobs?q=' + encodeURIComponent(job.title) + '&l=' + loc;
+  } else if (platform.includes('glassdoor')) {
+    return 'https://www.glassdoor.com/Job/jobs.htm?sc.keyword=' + encodeURIComponent(job.title) + '&locT=C&locId=1147401';
+  } else {
+    // Default to LinkedIn
+    return 'https://www.linkedin.com/jobs/search/?keywords=' + encodeURIComponent(job.title) + '&location=' + loc + '&f_TPR=r604800';
+  }
+}
+
 function applyToJob(id) {
   const job = S.jobs.find(j => j.id === id);
   if (!job) return;
-  // Open apply URL
-  window.open(job.applyUrl, '_blank');
+  // Open real job search filtered to this role
+  window.open(realSearchUrl(job), '_blank');
   // Log as applied
   const existing = S.apps.find(a => a.jobId === id);
   if (!existing) {
